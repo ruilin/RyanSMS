@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">PopSMS</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+
+    <string name="btn_ok">ok</string>
+    <string name="btn_reply">Reply</string>
+    <string name="btn_inbox">Inbox</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_next">Next</string>
+    <string name="btn_send">Send</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_close">Close</string>
+    
+    <string name="toast_delete">ok,the message has been delete!</string>
+    <string name="toast_invaild">Invaild message~</string>
+    <string name="toast_send">ok,the message has been sent!</string>
+    <string name="toast_fail">The message cannot be replied~</string>
+    
+    <string name="title_reply">Reply</string>
+ 	<string name="title_unread">unread</string>
+    <string name="title_markRead">read</string>
+    
+    <string name="tip_send">send message to: </string>
+    <string name="tip_about">Message: The function of SMS popup window has been opened.Thank you for using!\nAuthor: Ryan Zheng \nQQ: 50709433 \nE-mail: ryan.zheng87@gmail.com</string>
+    <string-array name="theme">
+        <item >Default</item>
+        <item >Lovely Rabbit</item>
+        <item >Dark Night</item>
+        <item >Cartoon</item>
+        <item >Chinoiserie</item>
+    </string-array>
+</resources>

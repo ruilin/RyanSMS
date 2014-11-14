@@ -1,0 +1,6 @@
+# view AndroidManifest.xml #generated:29
+-keep class com.ryan.sms.SmsMain { <init>(...); }
+
+# view AndroidManifest.xml #generated:23
+-keep class com.ryan.sms.SmsReceiver { <init>(...); }
+

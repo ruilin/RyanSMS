@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="55dp" >
+
+        <QuickContactBadge
+            android:id="@+id/img_photo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:background="@drawable/default_avatar" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/textView_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:text="Ryan"
+                android:ellipsize="end"
+                android:textAppearance="?android:attr/textAppearanceLarge" />
+
+            <TextView
+                android:id="@+id/textView_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="3dp"
+                android:text="yyyy-mm-dd"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+        </LinearLayout>
+
+         <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+	            android:layout_weight="1"
+            android:orientation="vertical" >
+	        <TextView
+	            android:id="@+id/textView_index"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:layout_gravity="right"
+	            android:layout_marginRight="5dp"
+	            android:text="1/10"
+	            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+	        <CheckBox
+	            android:id="@+id/checkBox_read"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:layout_gravity="right"
+	            android:layout_marginRight="5dp"
+	            android:checked="true"
+	            style="@style/MyCheckBox"
+	            android:text="@string/title_markRead"
+	            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+		</LinearLayout>
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/imageView1"
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginBottom="3dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:background="#898585"
+        />
+
+    <TextView
+        android:id="@+id/textView_message"
+        android:layout_width="match_parent"
+      	android:layout_height="130dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:scrollbars="vertical"
+        android:singleLine="false"
+        android:text="短信内容："
+        />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <EditText
+            android:id="@+id/editText_reply"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="3dp"
+            android:background="@drawable/edittext"
+            android:ems="10" />
+
+        <Button
+            android:id="@+id/button_reply"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableLeft="@drawable/ic_reply"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:text="@string/btn_reply" />
+    </LinearLayout>
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stretchColumns="*" >
+
+        <TableRow
+            android:id="@+id/tableRow2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+	
+	        <Button
+	            android:id="@+id/button_detail"
+	            style="?android:attr/buttonStyleSmall"
+	            android:drawableLeft="@drawable/ic_msg"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="@string/btn_inbox" />
+            
+	        <Button
+	            android:id="@+id/button_delete"
+	            style="?android:attr/buttonStyleSmall"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:drawableLeft="@drawable/ic_delete"
+	            android:text="@string/btn_delete" />
+
+	        <Button
+	            android:id="@+id/button_close"
+	            style="?android:attr/buttonStyleSmall"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:drawableLeft="@drawable/ic_close"
+	            android:text="@string/btn_close" />
+
+        </TableRow>
+
+    </TableLayout>
+
+</LinearLayout>

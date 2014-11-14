@@ -1,0 +1,442 @@
+package com.ryan.sms;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.content.DialogInterface.OnDismissListener;
+import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Color;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.telephony.SmsManager;
+import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.QuickContactBadge;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class SmsMain extends Activity {
+
+	public static SmsMain mInstance;
+	static AlertDialog mDialog;
+	private static LinkedList<Bundle> mQueue;
+	private Bundle mCurrBundle = null;
+	private String mSmsId = null;
+	private boolean isMain;
+	
+	QuickContactBadge mPhotoView;
+	TextView mTextview_name;
+	TextView mTextview_time;
+	TextView mTextview_content;
+	TextView mTextview_index;
+	CheckBox mCheckbox_read;
+	EditText mEdittext_reply;
+	Button mBtn_close;
+	
+	int themeSelectedIndex = 0;
+	 
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		if (null == mQueue) {
+			mQueue = new LinkedList<Bundle>();
+		}
+		mQueue.clear();
+		
+		mInstance = this;
+		themeSelectedIndex = Theme.getRecordTheme(this);
+		Intent intent = getIntent();
+		isMain = (null != intent.getAction());
+		if (!isMain) {
+			mCurrBundle = intent.getExtras();
+			createDialog(this, intent.getExtras(), Theme.getTheme(Theme.getRecordTheme(mInstance)));
+		} else {
+			createSetingDialog(this);
+		}
+	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		mInstance = null;
+	}
+	
+	Handler handler = new Handler() {
+		public void handleMessage(android.os.Message msg) {
+			switch(msg.what) {
+			case 0:
+				mQueue.addLast((Bundle)(msg.obj));
+				mTextview_index.setText((mQueue.size()) + " " + getResources().getString(R.string.title_unread));
+				mBtn_close.setText(getResources().getString(R.string.btn_next));
+				break;
+			case 1:
+				LayoutInflater inflater=(LayoutInflater)(mInstance.getSystemService(Context.LAYOUT_INFLATER_SERVICE));
+				View view = inflater.inflate(R.layout.dialog, null);
+				if (null != view) {
+					setDialogMsg(view, (Bundle)(msg.obj), Theme.getTheme(Theme.getRecordTheme(mInstance)));
+					view.invalidate();
+				}
+				break;
+			}
+		};
+	};
+	
+	
+	/**
+	 * 创建对话框
+	 */
+	public void createSetingDialog(Activity ctx) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
+        builder.setIcon(R.drawable.ic_launcher);
+        builder.setTitle(getResources().getString(R.string.app_name));
+        builder.setIcon(R.drawable.ic_launcher);
+        builder.setSingleChoiceItems(getResources().getStringArray(R.array.theme), themeSelectedIndex, new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				themeSelectedIndex = which;
+				createDialog(mInstance, null, Theme.getTheme(which));
+			}
+		});
+        builder.setPositiveButton(getResources().getString(R.string.btn_ok), new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				Theme.setRecordTheme(mInstance, themeSelectedIndex);
+				dialog.cancel();
+			}
+		});
+        builder.setOnCancelListener(new DialogInterface.OnCancelListener() {
+			@Override
+			public void onCancel(DialogInterface dialog) {
+				if (null != mInstance) mInstance.finish();
+				mInstance = null;
+			}
+		});
+        AlertDialog mainDialog = null;
+        mainDialog = builder.create();
+        mainDialog.setCancelable(true);
+        mainDialog.show();
+	}
+	/**
+	 * 创建对话框
+	 */
+	public void createDialog(Activity ctx, Bundle bundle, int[] theme) {
+		LayoutInflater inflater=(LayoutInflater)(ctx.getSystemService(Context.LAYOUT_INFLATER_SERVICE));
+		View view = inflater.inflate(R.layout.dialog, null);
+		if (-1 != theme[Theme.view_bg]) {
+			view.setBackgroundResource(theme[Theme.view_bg]);
+		}
+		if (-1 != theme[Theme.view_bgColor]) {
+			view.setBackgroundColor(theme[Theme.view_bgColor]);
+		}
+		mPhotoView = (QuickContactBadge)(view.findViewById(R.id.img_photo));
+		mTextview_name = (TextView)(view.findViewById(R.id.textView_name));
+        mTextview_time = (TextView)(view.findViewById(R.id.textView_time));
+        mTextview_content = (TextView)(view.findViewById(R.id.textView_message));
+        mTextview_index = (TextView)(view.findViewById(R.id.textView_index));
+        mCheckbox_read = (CheckBox)(view.findViewById(R.id.checkBox_read));
+        mEdittext_reply = (EditText)(view.findViewById(R.id.editText_reply));
+//        mEdittext_reply.setBackgroundColor(Color.BLACK);
+//        mEdittext_reply.setTextColor(Color.WHITE);
+        setDialogMsg(view, bundle, theme);
+        
+        if (-1 != theme[Theme.unread_txColor]) {
+        	mTextview_index.setTextColor(theme[Theme.unread_txColor]);
+        }
+        if (-1 != theme[Theme.read_txColor]) {
+        	mCheckbox_read.setTextColor(theme[Theme.read_txColor]);
+        }
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
+        builder.setIcon(R.drawable.ic_launcher);
+        builder.setView(view);
+        builder.setCancelable(true);
+        mDialog = null;
+        mDialog = builder.create();
+        mDialog.setCanceledOnTouchOutside(false);
+        mDialog.show();
+        mDialog.setOnDismissListener(new OnDismissListener() {
+			@Override
+			public void onDismiss(DialogInterface dialog) {
+				if (!isMain && null != mInstance)	mInstance.finish();
+			}
+		});
+        
+        mBtn_close = (Button)(view.findViewById(R.id.button_close));
+        mBtn_close.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				nextOrClose();
+			}
+		});
+        
+        Button btn_detail =  (Button)(view.findViewById(R.id.button_detail));
+        btn_detail.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				gotoSmsWindow();
+				mDialog.dismiss();
+			}
+		});
+        
+        Button btn_delete = (Button)(view.findViewById(R.id.button_delete));
+        btn_delete.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (null != mCurrBundle) {
+					deleteSms(getSmsId());
+					nextOrClose();
+					showToast(getResources().getString(R.string.toast_delete));
+				} else {
+					showToast(getResources().getString(R.string.toast_invaild));
+				}
+			}
+		});
+        
+        Button btn_reply = (Button)(view.findViewById(R.id.button_reply));
+        btn_reply.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (null != mCurrBundle) {
+					AlertDialog.Builder builder = new AlertDialog.Builder(mInstance);
+					builder.setTitle(getResources().getString(R.string.title_reply));
+					builder.setMessage(getResources().getString(R.string.tip_send) + mCurrBundle.getString(SmsReceiver.SMS_KEY_NAME) + 
+							"\n“" + mEdittext_reply.getText().toString() + "”");
+					builder.setPositiveButton(getResources().getString(R.string.btn_send), new android.content.DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							sendSms(mCurrBundle.getString(SmsReceiver.SMS_KEY_ADDRESS), mEdittext_reply.getText().toString());
+							mEdittext_reply.setText("");
+							showToast(getResources().getString(R.string.toast_send));
+						}
+					});
+					builder.setNegativeButton(getResources().getString(R.string.btn_cancel), new android.content.DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							dialog.cancel();
+						}
+					});
+					builder.create().show();
+				} else {
+					showToast(getResources().getString(R.string.toast_fail));
+				}
+			}
+		});
+	}
+	
+	/**
+	 * 快速提示
+	 */
+	private void showToast(String msg) {
+		Toast toast = Toast.makeText(getApplicationContext(), msg , Toast.LENGTH_SHORT);
+		toast.setGravity(Gravity.CENTER, 0, 0);
+		toast.show();
+	}
+	
+	/**
+	 * 下一条或关闭
+	 */
+	@SuppressLint("NewApi")
+	private void nextOrClose() {
+		if (mCheckbox_read.isChecked()) {
+			setRead(getSmsId());
+		}
+		
+		if (mQueue.isEmpty()) {
+			mDialog.dismiss();
+			
+		} else {
+			Bundle bundle = mQueue.pollFirst();
+			mCurrBundle = bundle;
+			if (mQueue.isEmpty()) {
+				mBtn_close.setText(getResources().getString(R.string.btn_close));
+			}
+			mSmsId = null;
+			Message msg = new Message();
+			msg.what = 1;
+			msg.obj = bundle;
+			handler.sendMessage(msg);
+		}
+	}
+	
+	private void setDialogMsg(View view, Bundle bundle, int[] theme) {
+		String name = "Ryan Zheng";
+		String time = "yyyy-mm-dd hh:mm:ss";
+		String content = getResources().getString(R.string.tip_about);
+		if (null == view) {
+			return;
+		}
+		if (null != bundle) {
+			name = bundle.getString(SmsReceiver.SMS_KEY_NAME);
+			content = bundle.getString(SmsReceiver.SMS_KEY_CONTENT);
+			time = bundle.getString(SmsReceiver.SMS_KEY_TIME);
+			mPhotoView.assignContactFromPhone(bundle.getString(SmsReceiver.SMS_KEY_ADDRESS), true);
+		}
+        
+        mTextview_name.setText(name);
+        if (-1 != theme[Theme.name_bgColor]) {
+        	mTextview_name.setBackgroundColor(theme[Theme.name_bgColor]);
+        }
+        if (-1 != theme[Theme.name_txColor]) {
+        	mTextview_name.setTextColor(theme[Theme.name_txColor]);
+        }
+        
+        mTextview_time.setText(time);
+        if (-1 != theme[Theme.time_bgColor]) {
+        	mTextview_time.setBackgroundColor(theme[Theme.time_bgColor]);
+        }
+        if (-1 != theme[Theme.time_txColor]) {
+        	mTextview_time.setTextColor(theme[Theme.time_txColor]);
+        }
+        
+        mTextview_content.setFocusable(true);
+        mTextview_content.setMovementMethod(ScrollingMovementMethod.getInstance());
+        if (-1 != theme[Theme.message_bgColor]) {
+        	mTextview_content.setBackgroundColor(theme[Theme.message_bgColor]);
+        }
+        if (-1 != theme[Theme.message_txColor]) {
+        	mTextview_content.setTextColor(theme[Theme.message_txColor]);
+        }
+        mTextview_content.setText(content);
+        
+        mTextview_index.setText((mQueue.size()) + " " + getResources().getString(R.string.title_unread));
+	}
+	
+	/*
+	       以下是访问短信数据库的uri
+        content://sms/inbox        收件箱
+        content://sms/sent        已发送
+        content://sms/draft        草稿
+        content://sms/outbox        发件箱
+        content://sms/failed        发送失败
+        content://sms/queued        待发送列表
+	 */
+	private void gotoSmsWindow() {
+		/* 打开收件箱 */
+		Intent intent = new Intent(Intent.ACTION_MAIN);
+		intent.setData(Uri.parse("content://mms-sms/draft"));
+		startActivity(intent); 
+	}
+	
+	
+	private void deleteSms(String smsId) {
+//		Uri mUri=Uri.parse("content://sms/conversations/" + id);
+		Uri mUri=Uri.parse("content://sms/");
+		mInstance.getContentResolver().delete(mUri, "_id=?", new String[]{smsId});
+	}
+	
+	
+	public String getSmsId() {
+		if (null == mSmsId) {
+			mSmsId = "0";
+			String SMS_READ_COLUMN = "read";
+			String WHERE_CONDITION = SMS_READ_COLUMN + " = 0";
+			String SORT_ORDER = "date DESC";
+			Cursor cursor = getContentResolver().query(
+					Uri.parse("content://sms/inbox"),new String[] { "_id", "thread_id", "address", "person", "date", "body" },
+					WHERE_CONDITION,null,SORT_ORDER);
+			if (cursor != null) {
+				try {
+					int count = cursor.getCount();
+					if (count > 0) {
+						cursor.moveToFirst();
+						mSmsId = cursor.getString(0);
+					}
+				} finally {
+					cursor.close();
+				}
+			}
+			Log.e("smsId", String.valueOf(mSmsId));
+		}
+		return mSmsId;
+	}
+	
+	private void setRead(String smsId) {
+//		//读取收件箱中指定号码的短信
+//		Cursor cursor = getContentResolver().query(
+//				Uri.parse("content://sms/inbox"),
+//				new String[]{"_id", "address", "read"}, " address=? and read=?", 
+//				new String[]{"12345678901", "0"}, "date desc");
+//		if (cursor != null){
+//			ContentValues values = new ContentValues();
+//			values.put("read", "1"); //修改短信为已读模式
+//			cursor.moveToFirst();
+//			while (cursor.isLast()){
+//				//更新当前未读短信状态为已读
+//				getContentResolver().update(Uri.parse("content://sms/inbox"), values, " _id=?", new String[]{""+cursor.getInt(0)});
+//					cursor.moveToNext();
+//			}
+//		}
+		ContentValues values = new ContentValues();
+		values.put("read", "1"); //修改短信为已读模式
+		getContentResolver().update(Uri.parse("content://sms/inbox"), values, " _id=?", new String[]{""+smsId});
+	}
+	
+	private void sendSms(String address, String content) {
+		 // 移动运营商允许每次发送的字节数据有限，我们可以使用Android给我们提供 的短信工具。
+		if (content != null) {
+			SmsManager sms = SmsManager.getDefault();
+			// 如果短信没有超过限制长度，则返回一个长度的List。
+			List<String> texts = sms.divideMessage(content);
+			for (String text : texts) {
+				sms.sendTextMessage(address, null, text, null, null);
+				Log.i("sms", "send a message");
+			}
+		}
+	}
+	
+
+	public static class Theme {
+		final static int view_bg = 0;
+		final static int view_bgColor = 1;
+		final static int name_bgColor = 2;
+		final static int name_txColor = 3;
+		final static int time_bgColor = 4;
+		final static int time_txColor = 5;
+		final static int message_bgColor = 6;
+		final static int message_txColor = 7;
+		final static int unread_txColor = 8;
+		final static int read_txColor = 9;
+		
+		final static String DB_NAME = "popsms";
+		final static String KEY_THEME = "theme";
+		
+		public static final int [][] themes = {
+			{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+			{R.drawable.bg_1, -1, Color.argb(100, 0, 0, 0), Color.WHITE, Color.argb(150, 0, 0, 0), -1, Color.argb(100, 0, 0, 0), Color.WHITE, Color.WHITE, Color.WHITE},
+			{R.drawable.bg_2, -1, Color.argb(100, 0, 0, 0), Color.WHITE, -1, -1, Color.argb(100, 0, 0, 0), Color.WHITE, Color.WHITE, Color.WHITE},
+			{R.drawable.bg_3, -1, Color.argb(150, 255, 255, 255), Color.BLACK, Color.argb(150, 255, 255, 255), Color.BLUE, Color.argb(150, 255, 255, 255), Color.BLACK, Color.BLACK, Color.BLACK},
+			{R.drawable.bg_4, -1, -1, Color.BLACK, -1, Color.DKGRAY, -1, Color.BLACK, Color.DKGRAY, Color.DKGRAY},
+		}; 
+		
+		public static int[] getTheme(int index) {
+			return themes[index];
+		}
+		
+		public static void setRecordTheme(Context ctx, int index) {
+			SharedPreferences sp = ctx.getSharedPreferences(DB_NAME, 0);
+			sp.edit().putInt(KEY_THEME, index).commit();
+		}
+		public static int getRecordTheme(Context ctx) {
+			SharedPreferences sp = ctx.getSharedPreferences(DB_NAME, 0);
+			return sp.getInt(KEY_THEME, 0);
+		}
+	}
+	
+}
